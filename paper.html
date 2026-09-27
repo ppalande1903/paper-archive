@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Archive</title>
+  <meta name="description" content="A dense academic paper, retold with plain words, analogies, doodles and an in-context glossary.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="progress" aria-hidden="true"></div>
+  <nav class="nav" aria-label="Site">
+    <a href="index.html">Home</a>
+    <a href="index.html#shelf" class="hide-sm">The Shelf</a>
+    <a href="index.html#new" class="hide-sm">Add a paper</a>
+    <a href="#cards">Cards</a>
+    <button data-open-catalogue>Look up<span class="kbd">/</span></button>
+  </nav>
+  <main id="app"></main>
+  <footer class="foot mono">
+    <span>© Paper Archive · Vol. 01</span>
+    <span>Explainers are AI-written retellings. Check the original before citing.</span>
+  </footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/drawings.js"></script>
+  <script src="js/lookup.js"></script>
+  <script>document.body.insertAdjacentHTML("afterbegin", PA.wobbleFilter);</script>
+  <script src="js/paper.js"></script>
+</body>
+</html>

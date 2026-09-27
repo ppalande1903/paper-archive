@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Archive</title>
+  <meta name="description" content="Upload a complex academic paper and get it back as plain words, analogies, doodles and an in-context glossary.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Caveat:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="nav over" aria-label="Site">
+    <a href="#top">Home</a>
+    <a href="#shelf">The Shelf</a>
+    <a href="#how" class="hide-sm">How it works</a>
+    <a href="#add">Add a paper</a>
+  </nav>
+
+  <header class="hero" id="top">
+    <svg class="string" viewBox="0 0 1000 200" preserveAspectRatio="none" aria-hidden="true" style="position:absolute;inset:0 0 auto 0;width:100%;height:220px;z-index:4;pointer-events:none">
+      <path d="M170 -10 C 260 150, 420 20, 560 92 S 820 60, 1010 -6" fill="none" stroke="#e25b4c" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+      <path d="M560 92 c -30 -30 -46 6 -2 4 M560 92 c 30 -34 48 4 2 4 M560 94 l -14 34 M562 94 l 16 30" fill="none" stroke="#e25b4c" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+    </svg>
+
+    <div class="scrap" style="left:1.5%;top:15%;--r:-13deg">
+      <div class="beads" aria-label="PAPERS">
+        <span class="bead sym">♥</span><span class="bead">P</span><span class="bead pink">A</span><span class="bead">P</span><span class="bead">E</span><span class="bead pink">R</span><span class="bead">S</span><span class="bead sym">★</span>
+      </div>
+    </div>
+
+    <div class="scrap" style="left:26%;top:12%;--r:5deg">
+      <div class="sticky">complex papers, explained with doodles &amp; analogies<small>pinned by the archive</small></div>
+    </div>
+
+    <div class="scrap" style="left:55%;top:9%;--r:11deg">
+      <div class="envelope"><div class="letter">dear reader, no PhD required ♡</div><div class="body"></div><div class="flap"></div></div>
+    </div>
+
+    <div class="scrap opt" style="left:0;top:31%;--r:18deg" aria-hidden="true">
+      <svg width="110" height="110" viewBox="-55 -55 110 110" class="flower" data-color="#8aa6e8" data-core="#f3d36b"></svg>
+    </div>
+    <div class="scrap opt" style="right:21%;top:25%;--r:-8deg" aria-hidden="true">
+      <svg width="64" height="64" viewBox="-55 -55 110 110" class="flower" data-color="#8aa6e8" data-core="#f7e7a1"></svg>
+    </div>
+    <div class="scrap" style="right:1.5%;top:17%;--r:12deg" aria-hidden="true">
+      <svg width="170" height="170" viewBox="-55 -55 110 110" class="flower" data-color="#f1dc93" data-core="#c79a2a"></svg>
+    </div>
+
+    <div class="scrap opt" style="left:7%;top:44%;--r:-7deg">
+      <div class="polaroid"><div class="photo" data-draw="bulb"></div><div class="cap">analogies!</div></div>
+    </div>
+
+    <div class="scrap" style="left:21%;top:59%;--r:-9deg">
+      <div class="ticket"><div class="top"><span>Admit one</span><span>№ —</span></div>
+        <div>Any paper · any field</div><div class="big">Your paper, explained</div><div>Seat: every section</div></div>
+    </div>
+    <div class="scrap opt" style="left:32%;top:68%;--r:5deg">
+      <div class="ticket salmon"><div>Rated</div><div class="big">ELI5</div><div>OK for laypeople &amp; PhDs</div></div>
+    </div>
+
+    <div class="scrap" style="left:44%;top:61%;--r:-4deg"><span class="tag">vol. 01 · blank</span></div>
+
+    <div class="scrap" style="left:50%;top:64%;--r:-6deg" aria-hidden="true">
+      <svg width="120" height="130" viewBox="0 0 120 130">
+        <defs><radialGradient id="cherry" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".5" stop-color="#c1121f"/><stop offset="1" stop-color="#6b0a10"/></radialGradient></defs>
+        <path d="M62 10 C57 42 44 62 36 84 M62 10 C68 42 78 62 86 88" stroke="#5a3b1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M62 10 q24 -10 40 6 q-22 10 -40 -6z" fill="#4f9a3a"/>
+        <circle cx="36" cy="98" r="22" fill="url(#cherry)"/><circle cx="86" cy="104" r="22" fill="url(#cherry)"/>
+        <ellipse cx="29" cy="90" rx="5" ry="3" fill="#fff" opacity=".7"/><ellipse cx="79" cy="96" rx="5" ry="3" fill="#fff" opacity=".7"/>
+      </svg>
+    </div>
+
+    <div class="scrap opt" style="left:57%;top:34%;--r:0deg" aria-hidden="true"><div class="record" style="position:relative"></div></div>
+
+    <a class="scrap" href="#add" data-open-add draggable="false" style="left:65%;top:44%;--r:6deg" aria-label="Add a paper">
+      <span class="sleeve" style="position:relative">
+        <span class="play">REC ●</span>
+        <span class="stack"><span>Your</span><span>paper</span><span>here</span><span>here</span><span>here</span></span>
+        <span class="meta">Blank tape<br>Drop in a PDF</span>
+        <span class="barcode"></span>
+      </span>
+    </a>
+
+    <div class="scrap opt" style="right:3%;top:60%;--r:9deg" aria-hidden="true">
+      <div class="crossword" data-grid="ABSTRACT|#.#.#.#H|..#...#E|#.DOI.#S|.#..#..I|#..#...S"></div>
+    </div>
+
+    <h1 class="hero-title"><span>Paper</span><span>Archive</span></h1>
+    <p class="hero-sub">Drop in a dense academic paper and get it back as plain words, analogies, doodles and a pocket glossary. Drag the scraps around, then fill a tape.<br><a class="box-btn" href="#shelf">Browse the shelf ↓</a></p>
+  </header>
+
+  <section class="section" id="shelf">
+    <div class="section-head">
+      <h2 class="section-title">The Shelf</h2>
+      <p class="section-lede">Each tape is one paper. Pick a blank one to record a new paper, or open a recorded one to read it chapter by chapter.</p>
+    </div>
+    <div class="shelf">
+      <div class="shelf-bar">
+        <a class="box-btn" href="#top">Back / top</a>
+        <span class="mono shelf-count"></span>
+        <button class="box-btn" data-open-add>+ Add a paper</button>
+      </div>
+      <div class="shelf-track" role="listbox" aria-label="Papers on the shelf" tabindex="0"></div>
+      <div class="shelf-nav"><button data-dir="-1" aria-label="Previous tape">←</button><button data-dir="1" aria-label="Next tape">→</button></div>
+      <div class="shelf-caption" aria-live="polite"></div>
+      <div class="shelf-foot mono"><span>© Paper Archive</span><span>← → to browse</span></div>
+    </div>
+  </section>
+
+  <section class="section locals" id="how">
+    <div>
+      <h2 class="section-title">How it<br>works</h2>
+      <p class="section-lede" style="margin-top:16px">Upload a PDF and Claude reads the whole paper, then retells it the same way every time, so you learn the real terminology without needing the background.</p>
+    </div>
+    <div class="locals-grid">
+      <figure><div class="polaroid"><div class="photo" data-draw="bubble"></div><div class="cap">so basically…</div></div>
+        <figcaption>Plain words, every chapter<small>one chapter per section of the original</small></figcaption></figure>
+      <figure><div class="polaroid"><div class="photo" data-draw="bulb"></div><div class="cap">it’s like…</div></div>
+        <figcaption>An analogy for each idea<small>on a sticky note beside the text</small></figcaption></figure>
+      <figure><div class="polaroid"><div class="photo" data-draw="pencil"></div><div class="cap">see it drawn</div></div>
+        <figcaption>A doodle per chapter<small>sketched for that chapter’s idea</small></figcaption></figure>
+      <figure><div class="polaroid"><div class="photo" data-draw="lookup"></div><div class="cap">what does that mean?</div></div>
+        <figcaption>Look up any word, in context<small>tap, select, or press /</small></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="section" id="add">
+    <div class="section-head">
+      <h2 class="section-title">Add a paper</h2>
+      <p class="section-lede">All you need is a PDF. No API key: the explainer is written by Claude on your Claude login, or by Ollama on this Mac. It takes a few minutes.</p>
+    </div>
+    <div class="add-grid">
+      <div>
+        <button class="big-btn" data-open-add>+ Record a paper</button>
+        <ul class="notes">
+          <li><b>No API key.</b> Claude runs through the Claude Code app you’re signed in to, so it counts toward your Claude plan’s usage like any other chat. Ollama runs on this Mac and is free.</li>
+          <li><b>You choose what’s kept.</b> When an explainer is ready, you’re asked whether to keep it on this device or only for this session.</li>
+          <li><b>Your PDF isn’t stored.</b> It’s read from a temporary folder that’s deleted straight after. Only the finished explainer is kept, and only if you say so.</li>
+          <li><b>Runs locally.</b> Start the site with <code>python3 server.py</code>; it only answers requests from this Mac.</li>
+        </ul>
+      </div>
+      <div class="your-data">
+        <div class="mono data-head">On this device</div>
+        <ul class="data-list"></ul>
+        <div class="data-actions">
+          <button class="box-btn" data-clear-saved>Delete all saved papers</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot mono">
+    <span>© Paper Archive · Vol. 01</span>
+    <span>Plain HTML, CSS &amp; JS · no tracking</span>
+  </footer>
+
+  <dialog class="add-dlg" aria-labelledby="add-title">
+    <div class="add-head"><span class="mono">New tape · add a paper</span><button class="box-btn" data-close-dlg>Close</button></div>
+
+    <div class="add-step" data-step="form">
+      <h3 class="add-title" id="add-title">Record a paper</h3>
+      <p class="add-lede">Upload a PDF and choose who reads it. You get back plain-language chapters, analogies, doodles, a glossary and a quiz.</p>
+      <label class="drop">
+        <input type="file" accept="application/pdf,.pdf" class="sr-only" id="pdf">
+        <span class="drop-main">Drop a PDF here or <u>choose a file</u></span>
+        <span class="drop-sub mono">Up to 40 MB · text or scanned</span>
+      </label>
+      <fieldset class="field engines">
+        <legend class="mono">Who writes it?</legend>
+        <label class="engine">
+          <input type="radio" name="engine" value="claude">
+          <span><b>Claude</b> · best explanations, reads scanned pages too<small class="eng-note" data-for="claude">Checking…</small></span>
+        </label>
+        <label class="engine">
+          <input type="radio" name="engine" value="ollama">
+          <span><b>Ollama</b> · runs on this Mac, free and private
+            <select id="ollama-model" aria-label="Ollama model"></select>
+            <small class="eng-note" data-for="ollama">Checking…</small></span>
+        </label>
+      </fieldset>
+      <p class="hint server-hint" hidden>The explainers are written by a small server on this Mac. Start it in the paper-archive folder with <code>python3 server.py</code>, then reload this page.</p>
+      <p class="add-err" role="alert" hidden></p>
+      <button class="big-btn" data-go>Write the explainer →</button>
+    </div>
+
+    <div class="add-step" data-step="work" hidden>
+      <h3 class="add-title">Recording…</h3>
+      <div class="tape-anim" aria-hidden="true"><span class="reel"></span><span class="reel"></span></div>
+      <p class="work-phase" aria-live="polite"></p>
+      <p class="work-meta mono"></p>
+      <button class="box-btn" data-cancel>Stop</button>
+    </div>
+
+    <div class="add-step" data-step="keep" hidden>
+      <h3 class="add-title">Your explainer is ready</h3>
+      <p class="keep-sum"></p>
+      <p class="keep-q">Keep this paper on this device?</p>
+      <p class="hint">Kept papers stay in this browser until you delete them. If you don’t keep it, it disappears when you close this tab. Your PDF itself is never stored.</p>
+      <p class="add-err" role="alert" hidden></p>
+      <div class="keep-btns">
+        <button class="big-btn" data-keep="yes">Yes, keep it</button>
+        <button class="box-btn" data-keep="no">No, just for this session</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="js/store.js"></script>
+  <script src="js/drawings.js"></script>
+  <script src="js/generate.js"></script>
+  <script>document.body.insertAdjacentHTML("afterbegin", PA.wobbleFilter);</script>
+  <script src="js/home.js"></script>
+</body>
+</html>
