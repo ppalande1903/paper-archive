@@ -147,7 +147,7 @@
   /* ---------- add a paper ---------- */
   const dlg = $(".add-dlg");
   const steps = [...dlg.querySelectorAll(".add-step")];
-  const fileInput = $("#pdf"), modelSel = $("#ollama-model"), drop = $(".drop"), goBtn = $("[data-go]");
+  const fileInput = $("#pdf"), modelSel = $("#browser-model"), drop = $(".drop"), goBtn = $("[data-go]");
   let file = null, run = null, result = null;
 
   const show = (name) => steps.forEach((s) => (s.hidden = s.dataset.step !== name));
@@ -157,27 +157,22 @@
   const chosenEngine = () => (engineInputs.find((i) => i.checked) || {}).value;
 
   async function loadEngines() {
-    const hint = $(".server-hint");
-    let info;
-    try { info = await PA.engines(); hint.hidden = true; }
-    catch (e) { hint.hidden = false; info = null; }
+    const info = await PA.engines();
     engineInputs.forEach((input) => {
-      const e = info && info[input.value];
-      input.disabled = !(e && e.available);
-      $(`.eng-note[data-for="${input.value}"]`).textContent = e ? e.note : "Needs the local server.";
+      const e = info[input.value];
+      input.disabled = !e.available;
+      $(`.eng-note[data-for="${input.value}"]`).textContent = e.note;
     });
-    const models = (info && info.ollama.models) || [];
     const prev = modelSel.value;
-    modelSel.innerHTML = models.map((m) => `<option>${esc(m)}</option>`).join("");
-    modelSel.hidden = !models.length;
-    if (models.includes(prev)) modelSel.value = prev;
+    modelSel.innerHTML = info.browser.models.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}${m.cached ? " · downloaded" : ""}</option>`).join("");
+    if (prev) modelSel.value = prev;
     if (!chosenEngine() || engineInputs.find((i) => i.checked).disabled) {
       const first = engineInputs.find((i) => !i.disabled);
       engineInputs.forEach((i) => (i.checked = i === first));
     }
     goBtn.disabled = !chosenEngine();
   }
-  modelSel.addEventListener("change", () => { const o = engineInputs.find((i) => i.value === "ollama"); if (!o.disabled) o.checked = true; });
+  modelSel.addEventListener("change", () => { const o = engineInputs.find((i) => i.value === "browser"); if (!o.disabled) o.checked = true; });
 
   function openAdd() {
     if (run) { dlg.showModal(); return; }
@@ -219,22 +214,27 @@
     const phase = $(".work-phase"), meta = $(".work-meta");
     const started = Date.now();
     let last = { phase: "starting" };
-    const who = engine === "claude" ? "Claude" : modelSel.value;
-    const words = { starting: "Getting the tape ready…", reading: `${who} is reading the paper…`, thinking: `${who} is thinking it through…`, writing: "Writing the explainer…" };
+    const model = engine === "browser" ? PA.browserModel.MODELS.find((m) => m.id === modelSel.value) : null;
+    const who = model ? model.name : "Claude";
+    const words = {
+      starting: "Getting the tape ready…", reading: `${who} is reading the paper…`, thinking: `${who} is thinking it through…`, writing: "Writing the explainer…",
+      downloading: `Downloading ${who} (only the first time)…`, loading: `Loading ${who}…`,
+    };
     const paint = () => {
       const s = Math.round((Date.now() - started) / 1000);
       phase.textContent = last.phase === "writing" && last.detail ? `Writing: “${last.detail}”`
-        : last.phase === "reading" && last.detail ? `${who} is reading ${last.detail}…` : words[last.phase] || "";
+        : last.phase === "reading" && last.detail ? `${who} is reading ${last.detail}…`
+        : (last.phase === "downloading" || last.phase === "loading") && last.detail ? `${words[last.phase].slice(0, -1)}: ${last.detail}` : words[last.phase] || "";
       meta.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} elapsed${last.chars ? ` · ${last.chars.toLocaleString()} characters written` : ""}`;
     };
     const tick = setInterval(paint, 1000);
 
-    run = PA.generate({ engine, model: engine === "ollama" ? modelSel.value : "", file, onProgress: (p) => { last = p; paint(); } });
+    run = PA.generate({ engine, model: model ? model.id : "", file, onProgress: (p) => { last = p; paint(); } });
     try {
       result = await run.done;
       run = null;
       const u = result.usage;
-      $(".keep-sum").innerHTML = `<b>${esc(result.title)}</b>: ${plural(result.chapters.length, "chapter")}, ${plural(Object.keys(result.glossary).length, "glossary card")}, ${plural(result.quiz.length, "quiz question")}.<br><span class="mono">${u.engine === "claude" ? "Written by Claude on your Claude plan" : `Written on this Mac by ${esc(u.model)} · free`} · ${Math.max(1, Math.round((u.seconds || 0) / 60))} min · ${(u.input || 0).toLocaleString()} tokens in, ${(u.output || 0).toLocaleString()} out</span>`;
+      $(".keep-sum").innerHTML = `<b>${esc(result.title)}</b>: ${plural(result.chapters.length, "chapter")}, ${plural(Object.keys(result.glossary).length, "glossary card")}, ${plural(result.quiz.length, "quiz question")}.<br><span class="mono">${u.engine === "claude" ? "Written by Claude on your Claude plan" : `Written in this browser by ${esc(u.model)} · free`} · ${Math.max(1, Math.round((u.seconds || 0) / 60))} min · ${(u.input || 0).toLocaleString()} tokens in, ${(u.output || 0).toLocaleString()} out</span>`;
       err("keep", "");
       show("keep");
     } catch (e) {

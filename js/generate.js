@@ -1,5 +1,6 @@
-/* Asks the local server (server.py) to write an explainer for a PDF, then cleans up the result.
-   The server runs Claude Code on the user's Claude login, or a local Ollama model: no API key. */
+/* Gets an explainer written for a PDF, then cleans up the result. Two writers, neither needs an API key:
+   "browser" runs a small open model on this device (js/browser-model.js) and works anywhere, even on a
+   static host; "claude" asks the local server (server.py) to run Claude Code on the user's Claude login. */
 window.PA = window.PA || {};
 
 (function () {
@@ -15,8 +16,14 @@ window.PA = window.PA || {};
     return data;
   }
 
-  /* Which engines this machine can use. Throws if the local server isn't running. */
-  PA.engines = () => api("/api/engines");
+  /* Which writers this browser can use. Claude only exists when the site is served by server.py. */
+  PA.engines = async () => {
+    const [browser, server] = await Promise.all([PA.browserModel.check(), api("/api/engines").catch(() => null)]);
+    return {
+      browser,
+      claude: server ? server.claude : { available: false, note: "Only when you run Paper Archive on your own computer with python3 server.py." },
+    };
+  };
 
   const slug = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
   const SPINES = [["#b3201b", "#f4ecdc"], ["#1b2f6b", "#e8e0cc"], ["#2b5aa8", "#f2d24b"], ["#23402c", "#e9e1cf"], ["#5b1f5f", "#f5b3cd"], ["#e9e1cf", "#8a1c17"], ["#0f0f0f", "#e4c867"], ["#8a1c17", "#f3e6c8"]];
@@ -47,7 +54,7 @@ window.PA = window.PA || {};
         quote: c.quote_text ? { text: c.quote_text, where: c.quote_where || "" } : null,
         takeaways: c.takeaways || [],
       }));
-    if (!chapters.length) throw new Error("Claude didn’t return any chapters. Try again, or try a different PDF.");
+    if (!chapters.length) throw new Error("The explainer came back without any chapters. Try again, or try a different PDF.");
 
     const quiz = (raw.quiz || [])
       .filter((q) => q && q.question && q.options && q.options.length >= 2 && q.answer_index >= 0 && q.answer_index < q.options.length)
@@ -80,12 +87,18 @@ window.PA = window.PA || {};
 
   /* Starts a run. Returns { done: Promise<paper>, abort() }. onProgress gets { phase, detail, chars, elapsed }. */
   PA.generate = function ({ engine, model, file, onProgress }) {
+    const bad = !file || !/\.pdf$/i.test(file.name) && file.type !== "application/pdf" ? "Please choose a PDF file."
+      : file.size > 40 * 1024 * 1024 ? "That PDF is over 40 MB. Try a smaller copy." : "";
+    if (bad) return { done: Promise.reject(new Error(bad)), abort() {} };
+    if (engine === "browser") {
+      const run = PA.browserModel.run({ model, file, onProgress });
+      return { done: run.done.then(({ result, usage }) => normalize(result, file.name, usage)), abort: run.abort };
+    }
+
     let jobId = null, stopped = false;
     const stop = () => new DOMException("Stopped", "AbortError");
 
     const done = (async () => {
-      if (!file || !/\.pdf$/i.test(file.name) && file.type !== "application/pdf") throw new Error("Please choose a PDF file.");
-      if (file.size > 40 * 1024 * 1024) throw new Error("That PDF is over 40 MB. Try a smaller copy.");
       onProgress({ phase: "starting" });
       const q = new URLSearchParams({ engine, model: model || "", name: file.name });
       ({ id: jobId } = await api("/api/jobs?" + q, { method: "POST", headers: { "Content-Type": "application/pdf" }, body: file }));

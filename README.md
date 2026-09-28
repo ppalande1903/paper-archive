@@ -13,8 +13,11 @@ cd paper-archive
 python3 server.py          # then open http://localhost:8000
 ```
 
-`server.py` uses only the Python standard library. It serves the site and writes the explainers, and it only
-answers requests from this machine. **No API key is needed.**
+`server.py` uses only the Python standard library. It serves the site and lets Claude write explainers, and it
+only answers requests from this machine. **No API key is needed.**
+
+The site also works with no server at all: host the folder on any static host (GitHub Pages, Netlify, …) and
+the in-browser writer does the work. Only the Claude option needs `server.py`.
 
 ## Adding a paper
 
@@ -23,16 +26,20 @@ answers requests from this machine. **No API key is needed.**
    - **Claude:** runs the Claude Code CLI you're already signed in to, so it counts toward your Claude plan like
      any other chat. Best explanations, reads scanned pages, and takes about 1–5 minutes. The CLI is found on your
      PATH or inside the Claude Code VS Code extension (set `CLAUDE_BIN` to override).
-   - **Ollama:** extracts the text with `pdftotext` and asks a local model. Free and private, but a small model like
-     `gemma3:4b` on 8 GB of RAM is slow (several minutes even for a short paper) and gives much thinner explainers.
-     Ollama must be running; long papers are refused rather than cut off.
+   - **In your browser:** pdf.js pulls out the text and a small open model (Qwen3.5 2B or 4B, via
+     [WebLLM](https://github.com/mlc-ai/web-llm)) writes the explainer on the device's graphics chip. Free and
+     private: the paper never leaves the device. The model downloads once (about 1.1 GB for 2B) and is cached by
+     the browser. Needs WebGPU (recent Chrome or Edge on a laptop or desktop). The explainer is deliberately short
+     (3–4 chapters, 6–10 glossary cards, a 3-question quiz, built-in doodles) because a small model writes slowly:
+     on an 8 GB M2 it takes around 10 minutes. Scanned PDFs don't work, and papers over roughly 16k tokens of
+     text are refused rather than cut off (the reference list is skipped, so most papers fit).
 3. When it's ready you're asked **whether to keep it on this device**:
    - **Yes:** saved in this browser (IndexedDB) until you remove it.
    - **No:** kept only for this session and gone when the tab closes.
 
 You can change your mind later from the shelf or the reader ("Keep it" / "Don't keep" / "Remove"). The
-**On this device** panel lists everything stored. The PDF itself is never kept: the server reads it from a
-temporary folder that's deleted when the job ends.
+**On this device** panel lists everything stored. The PDF itself is never kept: the in-browser writer reads it
+in memory, and the server reads it from a temporary folder that's deleted when the job ends.
 
 ### Safety
 
@@ -55,12 +62,13 @@ temporary folder that's deleted when the job ends.
 ## Layout
 
 ```
-server.py           local server: static files + explainer jobs (Claude Code CLI or Ollama)
+server.py           local server: static files + Claude explainer jobs (Claude Code CLI)
 index.html          home: collage hero, VHS shelf, add-a-paper dialog, on-this-device panel
 paper.html          reader for one paper (?id=…)
 css/style.css
-js/store.js         saved (IndexedDB) vs session-only papers, API key
-js/generate.js      sends the PDF to server.py, polls the job, normalises the explainer
+js/store.js         saved (IndexedDB) vs session-only papers
+js/browser-model.js in-browser writer: pdf.js + WebLLM (Qwen3.5), no server needed
+js/generate.js      picks the writer (browser or server.py), normalises the explainer
 js/drawings.js      built-in doodles + SVG sanitiser
 js/lookup.js        index cards, select-to-look-up, card catalogue
 js/paper.js         renders a paper

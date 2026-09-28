@@ -1,10 +1,8 @@
-"""Paper Archive local server: serves the site and writes explainers without an API key.
+"""Paper Archive local server: serves the site and lets Claude write explainers without an API key.
 
-Two engines:
-  claude  runs the Claude Code CLI you're already signed in to (your Claude plan, no API key).
-          It gets the PDF in a throwaway folder and may only use its Read tool.
-  ollama  extracts the PDF's text with pdftotext and asks a local Ollama model. Free, and
-          nothing leaves this Mac.
+It runs the Claude Code CLI you're already signed in to (your Claude plan, no API key). Claude gets the PDF
+in a throwaway folder and may only use its Read tool. The in-browser writer (js/browser-model.js) needs
+none of this, so the site also works on a static host; there, only the Claude option is unavailable.
 
 Run:  python3 server.py        then open http://localhost:8000
 """
@@ -17,16 +15,13 @@ import subprocess
 import tempfile
 import threading
 import time
-import urllib.request
 import uuid
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("PORT", "8000"))
-OLLAMA = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
 MAX_PDF = 40 * 1024 * 1024
-MAX_LOCAL_CTX = 40960  # tokens; more than this is too much for a small local model on 8 GB of RAM
 
 # ---------------------------------------------------------------- what we ask for
 
@@ -78,9 +73,6 @@ Stay faithful to the paper. Don't add claims it doesn't make; when you add outsi
 CLAUDE_SYSTEM = SYSTEM.format(
     source="The paper is the PDF file paper.pdf in your working directory. Read all of it first (use the pages parameter to read it in parts of up to 20 pages), then write.",
     chapters="usually 4–8", terms="20–50")
-OLLAMA_SYSTEM = SYSTEM.format(
-    source="The paper's text, extracted from its PDF, is in the user message; [page N] marks where each page starts.",
-    chapters="usually 3–6", terms="12–25")
 
 # ---------------------------------------------------------------- engines
 
@@ -103,28 +95,12 @@ def find_claude():
     return next((c for c in candidates if os.access(c, os.X_OK)), None)
 
 
-def ollama_models():
-    try:
-        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=1.5) as r:
-            names = [m["name"] for m in json.load(r).get("models", [])]
-        return [n for n in names if "embed" not in n]
-    except Exception:
-        return None
-
-
 def engines():
     claude = find_claude()
-    models = ollama_models()
-    pdftotext = shutil.which("pdftotext") or ("/opt/homebrew/bin/pdftotext" if os.path.exists("/opt/homebrew/bin/pdftotext") else None)
     return {
         "claude": {"available": bool(claude),
                    "note": "Uses your Claude login (the same account as the Claude app)." if claude
                    else "Claude Code isn’t installed. Install it from claude.com/claude-code and sign in."},
-        "ollama": {"available": bool(models) and bool(pdftotext), "models": models or [],
-                   "note": ("Runs on this Mac. Free and private." if models and pdftotext
-                            else "Ollama isn’t running. Open the Ollama app, then reopen this dialog." if models is None
-                            else "No Ollama models found. Run: ollama pull gemma3:4b" if not models
-                            else "pdftotext is missing. Run: brew install poppler")},
     }
 
 
@@ -235,61 +211,6 @@ def run_claude(job, pdf_bytes):
         shutil.rmtree(work, ignore_errors=True)
 
 
-def pdf_text(pdf_bytes):
-    exe = shutil.which("pdftotext") or "/opt/homebrew/bin/pdftotext"
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
-        f.write(pdf_bytes)
-        f.flush()
-        out = subprocess.run([exe, "-enc", "UTF-8", f.name, "-"], capture_output=True, text=True, timeout=120)
-    pages = out.stdout.split("\f")
-    return "\n\n".join(f"[page {i + 1}]\n{p.strip()}" for i, p in enumerate(pages) if p.strip())
-
-
-def run_ollama(job, pdf_bytes):
-    try:
-        job.phase = "reading"
-        text = pdf_text(pdf_bytes)
-        if len(text) < 500:
-            raise RuntimeError("Couldn’t find text in this PDF (it may be a scan). Try Claude instead, which can read scanned pages.")
-        need = len(text) // 4 + 3000 + 12000
-        if need > MAX_LOCAL_CTX:
-            raise RuntimeError(f"This paper is too long for a local model (about {len(text) // 4:,} tokens of text). Use Claude for this one.")
-        num_ctx = max(8192, -(-need // 4096) * 4096)
-        body = {"model": job.model, "stream": True, "format": SCHEMA,
-                "options": {"num_ctx": num_ctx, "temperature": 0.3, "num_predict": 12000},
-                "messages": [{"role": "system", "content": OLLAMA_SYSTEM},
-                             {"role": "user", "content": f"Write the explainer for this paper.\n\n<paper>\n{text}\n</paper>"}]}
-        req = urllib.request.Request(OLLAMA + "/api/chat", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-        written, prompt_tokens, out_tokens = "", 0, 0
-        with urllib.request.urlopen(req, timeout=1800) as r:
-            job.proc = r
-            for line in r:
-                if job.cancelled:
-                    break
-                ev = json.loads(line)
-                if ev.get("error"):
-                    raise RuntimeError("Ollama: " + ev["error"])
-                written += ev.get("message", {}).get("content", "")
-                job.chars = len(written)
-                if job.chars:
-                    job.phase, job.detail = "writing", chapter_hint(written)
-                if ev.get("done"):
-                    prompt_tokens, out_tokens = ev.get("prompt_eval_count", 0), ev.get("eval_count", 0)
-                    if ev.get("done_reason") == "length":
-                        raise RuntimeError("The local model ran out of room before finishing. Try Claude, or a shorter paper.")
-        if job.cancelled:
-            job.status = "cancelled"
-            return
-        try:
-            job.result = json.loads(written)
-        except ValueError:
-            raise RuntimeError("The local model’s answer wasn’t valid. Try again, or use Claude.")
-        job.usage = {"engine": "ollama", "model": job.model, "input": prompt_tokens, "output": out_tokens}
-        job.status = "done"
-    except Exception as e:
-        job.status, job.error = ("cancelled", None) if job.cancelled else ("error", str(e))
-
-
 # ---------------------------------------------------------------- HTTP
 
 
@@ -343,7 +264,7 @@ class Handler(SimpleHTTPRequestHandler):
             if job and job.status == "running":
                 job.cancelled = True
                 try:
-                    job.proc and (job.proc.terminate() if hasattr(job.proc, "terminate") else job.proc.close())
+                    job.proc and job.proc.terminate()
                 except Exception:
                     pass
             return self.send_json(200, {"ok": True})
@@ -363,15 +284,13 @@ class Handler(SimpleHTTPRequestHandler):
         eng = engines()
         if engine not in eng or not eng[engine]["available"]:
             return self.send_json(400, {"error": eng.get(engine, {}).get("note", "Unknown engine.")})
-        if engine == "ollama" and model not in eng["ollama"]["models"]:
-            return self.send_json(400, {"error": "Choose one of your Ollama models."})
         if engine == "claude" and model and not re.fullmatch(r"[a-z0-9.\-]+", model):
             return self.send_json(400, {"error": "Unknown model."})
 
         job = Job(engine, model, name)
         with LOCK:
             JOBS[job.id] = job
-        threading.Thread(target=run_claude if engine == "claude" else run_ollama, args=(job, data), daemon=True).start()
+        threading.Thread(target=run_claude, args=(job, data), daemon=True).start()
         self.send_json(200, {"id": job.id})
 
 
@@ -379,5 +298,4 @@ if __name__ == "__main__":
     info = engines()
     print(f"Paper Archive → http://localhost:{PORT}")
     print(f"  Claude: {'ready' if info['claude']['available'] else info['claude']['note']}")
-    print(f"  Ollama: {'ready (' + ', '.join(info['ollama']['models']) + ')' if info['ollama']['available'] else info['ollama']['note']}")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

@@ -24,7 +24,8 @@
     .replace(/\{\{([^|}]+)\|([^}]+)\}\}/g, (m, t, g) => (p.glossary[g] ? `<span class="term" role="button" tabindex="0" data-term="${g}">${t}</span>` : t));
   const short = (g) => p.glossary[g].term.replace(/\s*\(.*\)$/, "");
   const termsIn = (c) => [...new Set([...c.body.join(" ").matchAll(/\{\{[^|}]+\|([^}]+)\}\}/g)].map((m) => m[1]))].filter((g) => p.glossary[g]);
-  const art = (c) => PA.safeSVG(c.svg, c.caption) || PA.drawing("bubble");
+  // Chapters without their own doodle (bad SVG, or the in-browser writer) take turns with the built-in ones.
+  const art = (c, i = 0) => PA.safeSVG(c.svg, c.caption) || PA.drawing(["bubble", "bulb", "pencil", "lookup"][i % 4]);
   const tints = ["", "pink", "blue"];
   const tilts = [-1.8, 1.4, -1, 2, -2.2, 1.1, -1.4, 1.7];
   const first = p.chapters[0], last = p.chapters[p.chapters.length - 1];
@@ -80,7 +81,7 @@
           </div>` : ""}
         </div>
         <aside class="ch-side">
-          <figure class="polaroid" style="--r:${-tilts[i % tilts.length]}deg;margin:0"><div class="photo">${art(c)}</div><figcaption class="cap">${esc(c.caption)}</figcaption></figure>
+          <figure class="polaroid" style="--r:${-tilts[i % tilts.length]}deg;margin:0"><div class="photo">${art(c, i)}</div><figcaption class="cap">${esc(c.caption)}</figcaption></figure>
           ${c.analogy.text ? `<div class="analogy ${tints[i % 3]}" style="--r:${tilts[i % tilts.length]}deg"><span class="lbl">Think of it like…</span><h4>${esc(c.analogy.title)}</h4><p>${rich(c.analogy.text)}</p></div>` : ""}
         </aside>
       </section>`)

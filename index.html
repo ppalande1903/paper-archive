@@ -112,7 +112,7 @@
   <section class="section locals" id="how">
     <div>
       <h2 class="section-title">How it<br>works</h2>
-      <p class="section-lede" style="margin-top:16px">Upload a PDF and Claude reads the whole paper, then retells it the same way every time, so you learn the real terminology without needing the background.</p>
+      <p class="section-lede" style="margin-top:16px">Upload a PDF and an AI model reads the whole paper, then retells it the same way every time, so you learn the real terminology without needing the background.</p>
     </div>
     <div class="locals-grid">
       <figure><div class="polaroid"><div class="photo" data-draw="bubble"></div><div class="cap">so basically…</div></div>
@@ -129,16 +129,16 @@
   <section class="section" id="add">
     <div class="section-head">
       <h2 class="section-title">Add a paper</h2>
-      <p class="section-lede">All you need is a PDF. No API key: the explainer is written by Claude on your Claude login, or by Ollama on this Mac. It takes a few minutes.</p>
+      <p class="section-lede">All you need is a PDF. No account and no API key: the explainer is written by a small AI model that runs right in your browser, or by Claude when you run Paper Archive on your own computer. It takes a few minutes.</p>
     </div>
     <div class="add-grid">
       <div>
         <button class="big-btn" data-open-add>+ Record a paper</button>
         <ul class="notes">
-          <li><b>No API key.</b> Claude runs through the Claude Code app you’re signed in to, so it counts toward your Claude plan’s usage like any other chat. Ollama runs on this Mac and is free.</li>
+          <li><b>Free, in your browser.</b> The model (Qwen3.5) downloads once, about 1 GB, then runs on your device’s graphics chip. It needs a recent Chrome or Edge on a laptop or desktop.</li>
+          <li><b>Claude, on your own computer.</b> Download Paper Archive and start it with <code>python3 server.py</code>, and Claude can write the explainers too, through the Claude Code app you’re signed in to, on your own Claude plan. Its explanations are much fuller.</li>
           <li><b>You choose what’s kept.</b> When an explainer is ready, you’re asked whether to keep it on this device or only for this session.</li>
-          <li><b>Your PDF isn’t stored.</b> It’s read from a temporary folder that’s deleted straight after. Only the finished explainer is kept, and only if you say so.</li>
-          <li><b>Runs locally.</b> Start the site with <code>python3 server.py</code>; it only answers requests from this Mac.</li>
+          <li><b>Your PDF isn’t stored.</b> In the browser it never leaves your device; Claude reads it from a temporary folder that’s deleted straight after. Only the finished explainer is kept, and only if you say so.</li>
         </ul>
       </div>
       <div class="your-data">
@@ -165,7 +165,7 @@
       <label class="drop">
         <input type="file" accept="application/pdf,.pdf" class="sr-only" id="pdf">
         <span class="drop-main">Drop a PDF here or <u>choose a file</u></span>
-        <span class="drop-sub mono">Up to 40 MB · text or scanned</span>
+        <span class="drop-sub mono">Up to 40 MB · scanned papers need Claude</span>
       </label>
       <fieldset class="field engines">
         <legend class="mono">Who writes it?</legend>
@@ -174,13 +174,12 @@
           <span><b>Claude</b> · best explanations, reads scanned pages too<small class="eng-note" data-for="claude">Checking…</small></span>
         </label>
         <label class="engine">
-          <input type="radio" name="engine" value="ollama">
-          <span><b>Ollama</b> · runs on this Mac, free and private
-            <select id="ollama-model" aria-label="Ollama model"></select>
-            <small class="eng-note" data-for="ollama">Checking…</small></span>
+          <input type="radio" name="engine" value="browser">
+          <span><b>In your browser</b> · free, runs on this device
+            <select id="browser-model" aria-label="Model"></select>
+            <small class="eng-note" data-for="browser">Checking…</small></span>
         </label>
       </fieldset>
-      <p class="hint server-hint" hidden>The explainers are written by a small server on this Mac. Start it in the paper-archive folder with <code>python3 server.py</code>, then reload this page.</p>
       <p class="add-err" role="alert" hidden></p>
       <button class="big-btn" data-go>Write the explainer →</button>
     </div>
@@ -208,6 +207,7 @@
 
   <script src="js/store.js"></script>
   <script src="js/drawings.js"></script>
+  <script src="js/browser-model.js"></script>
   <script src="js/generate.js"></script>
   <script>document.body.insertAdjacentHTML("afterbegin", PA.wobbleFilter);</script>
   <script src="js/home.js"></script>
