@@ -1,6 +1,7 @@
-/* Gets an explainer written for a PDF, then cleans up the result. Two writers, neither needs an API key:
+/* Gets an explainer written for a PDF, then cleans up the result. Two writers:
    "browser" runs a small open model on this device (js/browser-model.js) and works anywhere, even on a
-   static host; "claude" asks the local server (server.py) to run Claude Code on the user's Claude login. */
+   static host; "claude" asks server.py, which runs Claude Code on the user's own Claude login locally, or,
+   on a deployed site, the Claude API for people the owner has approved. */
 window.PA = window.PA || {};
 
 (function () {
@@ -24,6 +25,11 @@ window.PA = window.PA || {};
       claude: server ? server.claude : { available: false, note: "Only when you run Paper Archive on your own computer with python3 server.py." },
     };
   };
+
+  /* Asks the owner of a deployed site for access to Claude. */
+  PA.requestAccess = (details) => api("/api/access-requests", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(details),
+  });
 
   const slug = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
   const SPINES = [["#b3201b", "#f4ecdc"], ["#1b2f6b", "#e8e0cc"], ["#2b5aa8", "#f2d24b"], ["#23402c", "#e9e1cf"], ["#5b1f5f", "#f5b3cd"], ["#e9e1cf", "#8a1c17"], ["#0f0f0f", "#e4c867"], ["#8a1c17", "#f3e6c8"]];

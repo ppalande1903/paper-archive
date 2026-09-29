@@ -155,6 +155,7 @@
 
   const engineInputs = [...dlg.querySelectorAll('input[name="engine"]')];
   const chosenEngine = () => (engineInputs.find((i) => i.checked) || {}).value;
+  let owner = "the site owner"; // who approves Claude access on a deployed site
 
   async function loadEngines() {
     const info = await PA.engines();
@@ -163,6 +164,10 @@
       input.disabled = !e.available;
       $(`.eng-note[data-for="${input.value}"]`).textContent = e.note;
     });
+    owner = info.claude.owner || owner;
+    const hint = $(".access-hint");
+    hint.hidden = info.claude.access !== "request";
+    $("span", hint).textContent = "Want to use Claude?";
     const prev = modelSel.value;
     modelSel.innerHTML = info.browser.models.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}${m.cached ? " · downloaded" : ""}</option>`).join("");
     if (prev) modelSel.value = prev;
@@ -183,6 +188,35 @@
     drop.focus();
     loadEngines();
   }
+
+  /* ---------- asking for Claude access (deployed site) ---------- */
+  const accessForm = $(".access-form");
+  $("[data-request-access]").addEventListener("click", () => {
+    $(".access-lede").textContent = `Claude runs on ${owner}’s API credit, so ${owner} approves each person. Leave your details, and once you’re approved you’ll get a personal link that unlocks Claude.`;
+    accessForm.hidden = false;
+    $(".access-done").hidden = true;
+    err("access", "");
+    show("access");
+    $("#acc-name").focus();
+  });
+  dlg.querySelectorAll("[data-access-back]").forEach((b) => b.addEventListener("click", () => show("form")));
+  accessForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const send = $('button[type="submit"]', accessForm), email = $("#acc-email").value.trim();
+    send.disabled = true;
+    err("access", "");
+    try {
+      await PA.requestAccess({ name: $("#acc-name").value, email, note: $("#acc-note").value });
+      accessForm.hidden = true;
+      accessForm.reset();
+      $(".access-done-text").textContent = `${owner} will look at it and send a personal link to ${email}. Opening it unlocks Claude on that device. Until then, the in-browser writer is free to use.`;
+      $(".access-done").hidden = false;
+    } catch (x) {
+      err("access", x.message);
+    } finally {
+      send.disabled = false;
+    }
+  });
 
   function setFile(f) {
     file = f || null;
@@ -234,7 +268,7 @@
       result = await run.done;
       run = null;
       const u = result.usage;
-      $(".keep-sum").innerHTML = `<b>${esc(result.title)}</b>: ${plural(result.chapters.length, "chapter")}, ${plural(Object.keys(result.glossary).length, "glossary card")}, ${plural(result.quiz.length, "quiz question")}.<br><span class="mono">${u.engine === "claude" ? "Written by Claude on your Claude plan" : `Written in this browser by ${esc(u.model)} · free`} · ${Math.max(1, Math.round((u.seconds || 0) / 60))} min · ${(u.input || 0).toLocaleString()} tokens in, ${(u.output || 0).toLocaleString()} out</span>`;
+      $(".keep-sum").innerHTML = `<b>${esc(result.title)}</b>: ${plural(result.chapters.length, "chapter")}, ${plural(Object.keys(result.glossary).length, "glossary card")}, ${plural(result.quiz.length, "quiz question")}.<br><span class="mono">${u.engine === "claude" ? "Written by Claude on your Claude plan" : u.engine === "claude-api" ? `Written by ${esc(u.model)} · shared by ${esc(owner)}` : `Written in this browser by ${esc(u.model)} · free`} · ${Math.max(1, Math.round((u.seconds || 0) / 60))} min · ${(u.input || 0).toLocaleString()} tokens in, ${(u.output || 0).toLocaleString()} out</span>`;
       err("keep", "");
       show("keep");
     } catch (e) {

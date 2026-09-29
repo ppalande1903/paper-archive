@@ -19,13 +19,41 @@ only answers requests from this machine. **No API key is needed.**
 The site also works with no server at all: host the folder on any static host (GitHub Pages, Netlify, …) and
 the in-browser writer does the work. Only the Claude option needs `server.py`.
 
+## Deploy it with Claude for people you approve
+
+A Claude plan is for its owner only, so a deployed site can't run on it. In **hosted mode** `server.py` calls the
+Claude API with your own API key (billed per use, separately from any plan), and only for people you approve:
+
+1. Visitors click **Ask for access** in the add-paper dialog and leave their name, email and a note.
+2. You sign in at **`/admin`**, approve (or deny) them, and send them the personal link it gives you
+   (**Copy** or **Email it**).
+3. Opening the link unlocks Claude on their device. You can revoke anyone, or give them a new link, at any time.
+
+Spending stays bounded: each person gets `DAILY_LIMIT` papers a day (default 3), one at a time, and Claude stops
+for everyone once this month's estimated spend reaches `MONTHLY_BUDGET_USD` (default $20). The admin page shows
+the spend, per-person usage and recent papers. With the default model, Claude Sonnet 5, a typical 15-page paper
+costs roughly $0.20–0.35. The in-browser writer stays free for everyone.
+
+**On Railway** (any host that runs Python with a persistent disk works the same way):
+
+1. Create an API key at [platform.claude.com](https://platform.claude.com), add credit, and consider a monthly
+   spend limit there as a second safety net.
+2. New project → **Deploy from GitHub repo** → this repo. It installs `requirements.txt` and runs the `Procfile`.
+3. Add a **volume** mounted at `/data` (it keeps the approvals when the app restarts or redeploys).
+4. Set the variables: `PAPER_ARCHIVE_MODE=hosted`, `ANTHROPIC_API_KEY=…`, `ADMIN_PASSWORD=…` (long and unique),
+   `OWNER_NAME=Your name`, `DATA_DIR=/data`, and optionally `DAILY_LIMIT`, `MONTHLY_BUDGET_USD`, `CLAUDE_MODEL`.
+5. **Settings → Networking → Generate domain**, then open `https://<your-domain>/admin`.
+
+All the settings are described at the top of [`hosted.py`](hosted.py).
+
 ## Adding a paper
 
 1. Click a blank tape (or **+ Add a paper**) and drop in a PDF.
 2. Choose who writes the explainer:
-   - **Claude:** runs the Claude Code CLI you're already signed in to, so it counts toward your Claude plan like
-     any other chat. Best explanations, reads scanned pages, and takes about 1–5 minutes. The CLI is found on your
-     PATH or inside the Claude Code VS Code extension (set `CLAUDE_BIN` to override).
+   - **Claude:** locally, runs the Claude Code CLI you're already signed in to, so it counts toward your Claude
+     plan like any other chat. The CLI is found on your PATH or inside the Claude Code VS Code extension (set
+     `CLAUDE_BIN` to override). On a deployed site it's the Claude API, for approved people (see above). Best
+     explanations, reads scanned pages, and takes about 1–5 minutes.
    - **In your browser:** pdf.js pulls out the text and a small open model (Qwen3.5 2B or 4B, via
      [WebLLM](https://github.com/mlc-ai/web-llm)) writes the explainer on the device's graphics chip. Free and
      private: the paper never leaves the device. The model downloads once (about 1.1 GB for 2B) and is cached by
@@ -47,7 +75,11 @@ in memory, and the server reads it from a temporary folder that's deleted when t
   holds the PDF, so text inside a paper can't make it run commands or touch other files.
 - Everything the model writes is treated as untrusted: text is HTML-escaped (only `**bold**`, `*italic*` and
   `{{term|id}}` links render) and doodles go through an allow-list SVG sanitiser (`PA.safeSVG`).
-- The API only accepts requests to `localhost` carrying the site's own header, so other websites can't use it.
+- The API only accepts requests carrying the site's own header, so other websites can't use it; locally it also
+  only answers `localhost`.
+- Hosted mode: the API key stays on the server; access links are random and only their hashes are stored; the
+  admin session cookie is `HttpOnly` and `SameSite=Strict`; each person can only see their own jobs; access
+  requests and admin sign-ins are rate-limited; only the site's own pages, styles and scripts are served.
 
 ## What's on each paper page
 
@@ -62,7 +94,11 @@ in memory, and the server reads it from a temporary folder that's deleted when t
 ## Layout
 
 ```
-server.py           local server: static files + Claude explainer jobs (Claude Code CLI)
+server.py           server: static files + Claude explainer jobs (Claude Code CLI locally, Claude API hosted)
+hosted.py           hosted mode: access requests, approvals, limits, spend (SQLite)
+admin.html          /admin page for approving people (js/admin.js)
+requirements.txt    the Anthropic SDK, needed only in hosted mode
+Procfile            start command for hosts like Railway
 index.html          home: collage hero, VHS shelf, add-a-paper dialog, on-this-device panel
 paper.html          reader for one paper (?id=…)
 css/style.css

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Paper Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="adm">
+    <header class="adm-head">
+      <a class="mono" href="/">← Paper Archive</a>
+      <button class="box-btn" data-logout hidden>Sign out</button>
+    </header>
+
+    <section class="adm-login" hidden>
+      <h1 class="add-title">Admin</h1>
+      <form class="field adm-login-form">
+        <label class="mono" for="pw">Password</label>
+        <input id="pw" type="password" autocomplete="current-password" required>
+        <p class="add-err" role="alert" hidden></p>
+        <button class="big-btn" type="submit">Sign in →</button>
+      </form>
+    </section>
+
+    <section class="adm-main" hidden>
+      <h1 class="add-title">Claude access</h1>
+      <div>
+        <p class="adm-stats mono"></p>
+        <div class="adm-bar" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="adm-link" role="status" hidden></div>
+      <h2 class="adm-h">Waiting for you</h2>
+      <div class="adm-list" data-list="requests"></div>
+      <h2 class="adm-h">People with access</h2>
+      <div class="adm-list" data-list="users"></div>
+      <h2 class="adm-h">Recent papers</h2>
+      <div class="adm-list" data-list="jobs"></div>
+    </section>
+  </main>
+  <script src="js/admin.js"></script>
+</body>
+</html>
