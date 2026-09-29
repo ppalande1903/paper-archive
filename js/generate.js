@@ -1,7 +1,7 @@
 /* Gets an explainer written for a PDF, then cleans up the result. Two writers:
    "browser" runs a small open model on this device (js/browser-model.js) and works anywhere, even on a
-   static host; "claude" asks server.py, which runs Claude Code on the user's own Claude login locally, or,
-   on a deployed site, the Claude API for people the owner has approved. */
+   static host; "claude" asks server.py to run Claude Code on the user's own Claude login (locally), or, on
+   the Vercel deployment, api/claude.js to call the Claude API for people the owner has approved. */
 window.PA = window.PA || {};
 
 (function () {
@@ -17,9 +17,12 @@ window.PA = window.PA || {};
     return data;
   }
 
-  /* Which writers this browser can use. Claude only exists when the site is served by server.py. */
+  let claudeInfo = null; // the server's description of its Claude option
+
+  /* Which writers this browser can use. Claude needs server.py (locally) or the Vercel functions. */
   PA.engines = async () => {
     const [browser, server] = await Promise.all([PA.browserModel.check(), api("/api/engines").catch(() => null)]);
+    claudeInfo = server && server.claude;
     return {
       browser,
       claude: server ? server.claude : { available: false, note: "Only when you run Paper Archive on your own computer with python3 server.py." },
@@ -91,6 +94,51 @@ window.PA = window.PA || {};
     };
   }
 
+  /* The Vercel deployment: one request to api/claude.js that streams progress lines and then the explainer. */
+  function streamClaude(file, onProgress) {
+    const stop = new AbortController();
+    const started = Date.now();
+    const stopped = () => new DOMException("Stopped", "AbortError");
+    const done = (async () => {
+      if (file.size > claudeInfo.max_bytes) {
+        throw new Error(`For Claude on this site the PDF must be under ${(claudeInfo.max_bytes / 1048576).toFixed(1)} MB. Try a smaller copy, or the in-browser writer.`);
+      }
+      onProgress({ phase: "starting" });
+      let r;
+      try {
+        r = await fetch("/api/claude?" + new URLSearchParams({ name: file.name }), {
+          method: "POST", headers: { ...API.headers, "Content-Type": "application/pdf" }, body: file, signal: stop.signal,
+        });
+      } catch (e) {
+        throw stop.signal.aborted ? stopped() : new Error("Can’t reach Claude right now. Check your connection and try again.");
+      }
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.error || "Server error " + r.status);
+      }
+      const reader = r.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = "";
+      for (;;) {
+        let chunk;
+        try { chunk = await reader.read(); } catch (e) { if (stop.signal.aborted) throw stopped(); break; }
+        if (chunk.done) break;
+        buffer += chunk.value;
+        let end;
+        while ((end = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, end).trim();
+          buffer = buffer.slice(end + 1);
+          if (!line) continue;
+          const msg = JSON.parse(line);
+          if (msg.error) throw new Error(msg.error);
+          if (msg.done) return normalize(msg.result, file.name, { ...msg.usage, seconds: (Date.now() - started) / 1000 });
+          onProgress(msg);
+        }
+      }
+      throw new Error("The connection to Claude dropped before the explainer arrived. Try again.");
+    })();
+    return { done, abort() { stop.abort(); } };
+  }
+
   /* Starts a run. Returns { done: Promise<paper>, abort() }. onProgress gets { phase, detail, chars, elapsed }. */
   PA.generate = function ({ engine, model, file, onProgress }) {
     const bad = !file || !/\.pdf$/i.test(file.name) && file.type !== "application/pdf" ? "Please choose a PDF file."
@@ -100,6 +148,7 @@ window.PA = window.PA || {};
       const run = PA.browserModel.run({ model, file, onProgress });
       return { done: run.done.then(({ result, usage }) => normalize(result, file.name, usage)), abort: run.abort };
     }
+    if (claudeInfo && claudeInfo.stream) return streamClaude(file, onProgress);
 
     let jobId = null, stopped = false;
     const stop = () => new DOMException("Stopped", "AbortError");

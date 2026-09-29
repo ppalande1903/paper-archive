@@ -1,0 +1,3 @@
+# Local-only files: the Python server runs Claude Code on your own machine, not on Vercel.
+*.py
+data/

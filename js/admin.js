@@ -1,4 +1,4 @@
-/* Admin page for a deployed Paper Archive (server.py in hosted mode): approve or deny requests to use Claude,
+/* Admin page for the Vercel deployment (api/admin.js): approve or deny requests to use Claude,
    send people their access link, revoke access, and see what Claude has cost this month.
    Everything people typed is inserted as text, never as HTML. */
 (function () {
@@ -41,7 +41,7 @@
     const errEl = $(".adm-login .add-err");
     errEl.hidden = true;
     try {
-      await api("/api/admin/login", { password: $("#pw").value });
+      await api("/api/admin", { action: "login", password: $("#pw").value });
       $("#pw").value = "";
       load();
     } catch (x) {
@@ -49,13 +49,13 @@
       errEl.hidden = false;
     }
   });
-  $("[data-logout]").addEventListener("click", async () => { await api("/api/admin/logout", {}); showLogin(); });
+  $("[data-logout]").addEventListener("click", async () => { await api("/api/admin", { action: "logout" }); showLogin(); });
 
   /* ---------- actions ---------- */
-  async function act(path, confirmText) {
+  async function act(action, id, confirmText) {
     if (confirmText && !confirm(confirmText)) return;
     try {
-      const res = await api(path, {});
+      const res = await api("/api/admin", { action, id });
       if (res.link) showLink(res.user, res.link);
     } catch (x) {
       alert(x.message);
@@ -97,8 +97,8 @@
       el("div", { class: "who" }, el("b", {}, r.name), el("span", {}, `${r.email} · asked ${when(r.created)}`),
         r.note && el("p", { class: "adm-note" }, `“${r.note}”`)),
       el("div", { class: "acts" },
-        el("button", { class: "big-btn", type: "button", onclick: () => act(`/api/admin/requests/${r.id}/approve`) }, "Approve"),
-        el("button", { class: "box-btn", type: "button", onclick: () => act(`/api/admin/requests/${r.id}/deny`, `Deny ${r.name}’s request?`) }, "Deny")),
+        el("button", { class: "big-btn", type: "button", onclick: () => act("approve", r.id) }, "Approve"),
+        el("button", { class: "box-btn", type: "button", onclick: () => act("deny", r.id, `Deny ${r.name}’s request?`) }, "Deny")),
     )), "No requests right now.");
 
     fill("users", s.users.map((u) => el("div", { class: "adm-row" + (u.revoked ? " off" : "") },
@@ -107,9 +107,9 @@
         el("span", {}, u.revoked ? `Access revoked ${when(u.revoked)}`
           : `${plural(u.papers, "paper")} · ${u.today} today · ${money(u.cost)} · last used ${when(u.last_used)}`)),
       el("div", { class: "acts" }, u.revoked
-        ? el("button", { class: "box-btn", type: "button", onclick: () => act(`/api/admin/users/${u.id}/link`, `Give ${u.name} access again with a new link?`) }, "Restore with a new link")
-        : [el("button", { class: "box-btn", type: "button", onclick: () => act(`/api/admin/users/${u.id}/link`, `Make a new link for ${u.name}? Their current link stops working.`) }, "New link"),
-          el("button", { class: "box-btn", type: "button", onclick: () => act(`/api/admin/users/${u.id}/revoke`, `Revoke ${u.name}’s access? Their link stops working right away.`) }, "Revoke")]),
+        ? el("button", { class: "box-btn", type: "button", onclick: () => act("link", u.id, `Give ${u.name} access again with a new link?`) }, "Restore with a new link")
+        : [el("button", { class: "box-btn", type: "button", onclick: () => act("link", u.id, `Make a new link for ${u.name}? Their current link stops working.`) }, "New link"),
+          el("button", { class: "box-btn", type: "button", onclick: () => act("revoke", u.id, `Revoke ${u.name}’s access? Their link stops working right away.`) }, "Revoke")]),
     )), "Nobody yet. Approve a request and they’ll show up here.");
 
     fill("jobs", s.jobs.map((j) => el("div", { class: "adm-row" },
@@ -121,11 +121,12 @@
 
   async function load() {
     try {
-      showMain(await api("/api/admin/state"));
+      showMain(await api("/api/admin"));
     } catch (x) {
       if (x.status === 401) showLogin();
+      else if (x.status === 503) $(".adm").append(el("p", { class: "hint" }, x.message));
       else if (x.status === 404 || x.status === 403) {
-        $(".adm").append(el("p", { class: "hint" }, "This page only works on a Paper Archive server running in hosted mode. See “Deploy it” in the README."));
+        $(".adm").append(el("p", { class: "hint" }, "This page only works on the Vercel deployment of Paper Archive. See “Deploy it on Vercel” in the README."));
       } else alert(x.message);
     }
   }
