@@ -77,7 +77,7 @@
       : `<span class="chip keep-chip temp">This session only</span> <button class="btn-mini" data-keep-id="${esc(it.id)}">Keep it</button>`;
     return `<h3>${esc(it.title)}</h3><div class="red">${esc([it.author, it.venue].filter(Boolean).join(" · "))}</div>
       <div class="yr">${esc(it.year || "")}${it.year ? " · " : ""}<a href="paper.html?id=${encodeURIComponent(it.id)}">Open the tape →</a></div>
-      <div class="yr status">${status} · <button class="btn-mini" data-remove="${esc(it.id)}">Remove</button></div>`;
+      <div class="yr status">${status} · <a class="btn-mini" href="paper.html?id=${encodeURIComponent(it.id)}&amp;pdf=1">Download PDF</a> · <button class="btn-mini" data-remove="${esc(it.id)}">Remove</button></div>`;
   }
 
   function renderShelf() {

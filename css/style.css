@@ -564,3 +564,28 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; a
 .adm-link p { margin: 0; }
 .adm-linkrow { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-linkrow input { flex: 1 1 260px; min-width: 0; background: var(--bg); color: var(--text); border: 1px solid var(--line-2); padding: 8px 10px; font: 400 13px var(--mono); }
+
+/* ---------- Download PDF: the paper page laid out for the browser's "Save as PDF" ---------- */
+@page { size: 1240px 1754px; margin: 0; } /* A4 proportions, wide enough to keep the desktop layout */
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } /* keep the dark page and coloured notes */
+  html, body { background: var(--bg); }
+  .nav, .progress, .how-to, .session-note, .stubs, .gloss-filter, .idx-card, .lookup-pill, .catalogue { display: none !important; }
+  .reader { grid-template-columns: minmax(0, 1fr); padding-top: 0; }
+  .p-hero { padding-top: 56px; }
+  /* Chrome lays the page out 1240px wide but matches the small-screen rules above against the paper size in
+     the print settings (about 800px), so put the desktop layout back. */
+  body { font-size: 18px; }
+  .p-hero { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .p-scraps { display: block; height: 420px; max-width: none; padding: 0; }
+  .p-scraps .sticky { position: absolute; left: 4%; top: 6%; width: 280px; max-width: none; min-height: 230px; font-size: 21px; }
+  .p-scraps .ticket { position: absolute; left: auto; right: 2%; top: 0; }
+  .p-scraps .polaroid { display: block; }
+  .chapter { grid-template-columns: minmax(0, 1fr) 320px; }
+  .ch-side { grid-template-columns: none; gap: 34px; }
+  .ch-head { grid-template-columns: auto 1fr; }
+  .ch-num { grid-row: span 2; font-size: 150px; }
+  .chapter + .chapter, #cards, #quiz { break-before: page; padding-top: 56px; }
+  .ch-head, .gloss-head { break-after: avoid; }
+  .polaroid, .analogy, .receipt, .quote, .gcard, .q, .prose p, .foot { break-inside: avoid; }
+}

@@ -171,5 +171,15 @@
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  /* ---- download as a PDF: the browser's "Save as PDF", laid out by the print styles in style.css ---- */
+  const filter = document.querySelector(".gloss-filter input");
+  addEventListener("beforeprint", () => { if (filter.value) { filter.value = ""; drawCards(); } }); // every card, not a filtered few
+  const savePdf = async () => { await document.fonts.ready; print(); };
+  document.querySelector("[data-pdf]").addEventListener("click", savePdf);
+  if (new URLSearchParams(location.search).get("pdf") === "1") { // "Download PDF" on the shelf
+    history.replaceState(null, "", `paper.html?id=${encodeURIComponent(id)}`);
+    setTimeout(savePdf, 300);
+  }
+
   if (location.hash) setTimeout(() => { const t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }, 60);
 })();

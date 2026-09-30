@@ -95,6 +95,7 @@ in memory, and the server reads it from a temporary folder that's deleted when t
 | **Doodles** | An SVG sketch per chapter, drawn by Claude and sanitised before display. |
 | **In-context lookup** | Tap an underlined term for its index card (meaning in this paper, in plain words, where it shows up, related terms). Select **any** word for a *Look up* button. Press <kbd>/</kbd> or <kbd>⌘K</kbd> to search every card. |
 | **Takeaways + quiz** | A receipt of what you just learned after each chapter, and a pop quiz at the end. |
+| **Download PDF** | Saves the whole tape as a PDF that looks like the page: the dark paper, sticky notes, polaroids and doodles, with real, selectable text. From the reader's top bar or the shelf (the browser's *Save as PDF*). |
 
 ## Layout
 
