@@ -179,7 +179,7 @@ def static_path(path):
     """Only the site's own pages, styles and scripts are served: never this file, the repo or dotfiles."""
     if path == "/":
         return "/index.html"
-    if path in ("/index.html", "/paper.html") or (re.fullmatch(r"/(css|js)/[\w.-]+\.(css|js)", path) and os.path.isfile(HERE + path)):
+    if path in ("/index.html", "/paper.html") or (re.fullmatch(r"/(css|js|fonts)/[\w.-]+\.(css|js|ttf|json)", path) and os.path.isfile(HERE + path)):
         return path
     return None
 

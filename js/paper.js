@@ -171,14 +171,30 @@
   addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  /* ---- download as a PDF: the browser's "Save as PDF", laid out by the print styles in style.css ---- */
+  /* ---- download a designed PDF of the paper (js/pdf.js); printing still works too (print styles in style.css) ---- */
   const filter = document.querySelector(".gloss-filter input");
   addEventListener("beforeprint", () => { if (filter.value) { filter.value = ""; drawCards(); } }); // every card, not a filtered few
-  const savePdf = async () => { await document.fonts.ready; print(); };
-  document.querySelector("[data-pdf]").addEventListener("click", savePdf);
+  const pdfBtn = document.querySelector("[data-pdf]");
+  const savePdf = async () => {
+    if (pdfBtn.disabled) return;
+    pdfBtn.disabled = true;
+    pdfBtn.textContent = "Making PDF…";
+    try {
+      await document.fonts.ready;
+      const doodles = p.chapters.map((c) => document.querySelector(`#ch-${CSS.escape(c.id)} .photo svg`));
+      await PA.downloadPdf(p, doodles);
+    } catch (e) {
+      console.error(e);
+      alert("Couldn’t make the PDF: " + (e.message || e));
+    } finally {
+      pdfBtn.disabled = false;
+      pdfBtn.textContent = "Download PDF";
+    }
+  };
+  pdfBtn.addEventListener("click", savePdf);
   if (new URLSearchParams(location.search).get("pdf") === "1") { // "Download PDF" on the shelf
     history.replaceState(null, "", `paper.html?id=${encodeURIComponent(id)}`);
-    setTimeout(savePdf, 300);
+    savePdf();
   }
 
   if (location.hash) setTimeout(() => { const t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }, 60);
