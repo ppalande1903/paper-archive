@@ -67,17 +67,19 @@ window.PA = window.PA || {};
     tocItem: true, tocStyle: { font: "Newsreader", fontSize: 12.5, lineHeight: 1.2 }, tocMargin: [0, 0, 0, 5], ...extra,
   });
 
-  /* The site's markup: **bold**, *italic* and {{shown words|glossary-id}} (underlined like on the page). */
+  /* The site's markup: **bold**, *italic* and {{shown words|glossary-id}}, underlined like on the page and
+     linked to the term's card in the glossary, so clicking it shows what it means. */
+  const termLink = (id) => ({ decoration: "underline", decorationStyle: "dashed", decorationColor: C.pink, linkToDestination: `term-${id}` });
   function rich(s, base = {}) {
     const runs = [];
-    const re = /\*\*(.+?)\*\*|\*(?!\s)(.+?)\*|\{\{([^|}]+)\|[^}]+\}\}/g;
+    const re = /\*\*(.+?)\*\*|\*(?!\s)(.+?)\*|\{\{([^|}]+)\|([^}]+)\}\}/g;
     let last = 0, m;
     s = String(s || "");
     while ((m = re.exec(s))) {
       if (m.index > last) runs.push(...t(s.slice(last, m.index), base));
       if (m[1]) runs.push(...t(m[1], { ...base, bold: true }));
       else if (m[2]) runs.push(...t(m[2], { ...base, italics: true }));
-      else runs.push(...t(m[3], { ...base, decoration: "underline", decorationStyle: "dashed", decorationColor: C.pink }));
+      else runs.push(...t(m[3], { ...base, ...termLink(m[4]) }));
       last = re.lastIndex;
     }
     if (last < s.length) runs.push(...t(s.slice(last), base));
@@ -140,7 +142,7 @@ window.PA = window.PA || {};
           { width: "auto", text: t(String(i + 1).padStart(2, "0"), { font: "Instrument", fontSize: 58, color: C.faint, lineHeight: 0.8 }) },
           { width: "*", margin: [12, 6, 0, 0], stack: [
             label([c.kicker, c.section && `${c.section} in the paper`].filter(Boolean).join("  ·  ").toUpperCase(), C.red),
-            heading(c.title, "Instrument", 27, { margin: [0, 4, 0, 0] }),
+            heading(c.title, "Instrument", 27, { margin: [0, 4, 0, 0], id: `ch-${i + 1}` }),
           ] },
         ],
         pageBreak: "before",
@@ -157,7 +159,8 @@ window.PA = window.PA || {};
         { canvas: [{ type: "line", x1: 0, y1: 0, x2: W - 24, y2: 0, dash: { length: 2 }, lineColor: "#999" }], margin: [0, 0, 0, 6] },
         { ol: c.takeaways.map((x) => ({ text: rich(x, { font: "Plex", fontSize: 8.5 }), margin: [0, 0, 0, 3] })), font: "Plex", fontSize: 8.5 },
         terms.length && { text: [...t("KEY TERMS  ", { font: "Plex", fontSize: 7, color: C.muted, characterSpacing: 1 }),
-          ...t(terms.map((g) => p.glossary[g].term).join("  ·  "), { font: "Plex", fontSize: 8 })], margin: [0, 6, 0, 0] },
+          ...terms.flatMap((g, k) => [...(k ? t("  ·  ", { font: "Plex", fontSize: 8 }) : []), ...t(p.glossary[g].term, { font: "Plex", fontSize: 8, ...termLink(g) })])],
+        margin: [0, 6, 0, 0] },
       ].filter(Boolean), C.card) },
     ].filter(Boolean);
   }
@@ -181,16 +184,32 @@ window.PA = window.PA || {};
       ], columnGap: 20, margin: [0, 0, 0, 18] },
       { text: t(`~${+p.minutes || 10} min read  ·  ${p.chapters.length} chapters  ·  ${terms.length} terms  ·  ${p.quiz.length} quiz questions`, { font: "Plex", fontSize: 8, color: C.muted }), margin: [0, 0, 0, 20] },
       { toc: { title: { text: t("IN THIS TAPE", { font: "Plex", fontSize: 7.5, characterSpacing: 1.4, color: C.red }), margin: [0, 0, 0, 8] }, numberStyle: { font: "Plex", fontSize: 9 } } },
+      { text: [...t("Tip: ", { font: "Plex", fontSize: 7.5, color: C.red }),
+        ...t("click any underlined word to see what it means in this paper.", { italics: true, fontSize: 9.5, color: C.muted })], margin: [0, 14, 0, 0] },
     ].filter(Boolean);
 
+    // which chapters link each term, for the way back from its card
+    const usedIn = {};
+    p.chapters.forEach((c, i) => {
+      for (const m of [...c.body, ...c.takeaways, c.analogy.text].join(" ").matchAll(/\{\{[^|}]+\|([^}]+)\}\}/g)) {
+        (usedIn[m[1]] = usedIn[m[1]] || new Set()).add(i + 1);
+      }
+    });
     const glossary = [
       heading("Card catalogue", "Instrument", 32, { pageBreak: "before", margin: [0, 0, 0, 6] }),
-      { text: t("Every key term, defined the way this paper uses it, plus an everyday version.", { italics: true, color: C.muted }), margin: [0, 0, 0, 14] },
+      { text: t("Every key term, defined the way this paper uses it, plus an everyday version. The chapter links take you back to where you were reading.", { italics: true, color: C.muted }), margin: [0, 0, 0, 14] },
       { table: { widths: [120, "*"], dontBreakRows: true, body: terms.map((g) => {
         const e = p.glossary[g];
+        const back = [...(usedIn[g] || [])].sort((a, b) => a - b);
         return [
-          { text: t(e.term, { font: "Instrument", fontSize: 14, lineHeight: 1 }) },
-          { stack: [{ text: rich(e.context, { fontSize: 9.8 }) }, e.plain && { text: [...t("In plain words: ", { font: "Plex", fontSize: 7.2, color: C.muted }), ...rich(e.plain, { italics: true, fontSize: 9.8, color: C.muted })], margin: [0, 3, 0, 0] }].filter(Boolean) },
+          { text: t(e.term, { font: "Instrument", fontSize: 14, lineHeight: 1 }), id: `term-${g}` },
+          { stack: [
+            { text: rich(e.context, { fontSize: 9.8 }) },
+            e.plain && { text: [...t("In plain words: ", { font: "Plex", fontSize: 7.2, color: C.muted }), ...rich(e.plain, { italics: true, fontSize: 9.8, color: C.muted })], margin: [0, 3, 0, 0] },
+            back.length && { text: [...t("Appears in  ", { font: "Plex", fontSize: 7, color: C.muted }),
+              ...back.flatMap((n, k) => [...(k ? t("  ·  ", { font: "Plex", fontSize: 7.5, color: C.muted }) : []),
+                ...t(`↩ Chapter ${n}`, { font: "Plex", fontSize: 7.5, color: C.red, linkToDestination: `ch-${n}` })])], margin: [0, 4, 0, 0] },
+          ].filter(Boolean) },
         ];
       }) }, layout: { hLineWidth: (i) => (i === 0 ? 0 : 0.5), hLineColor: () => C.faint, vLineWidth: () => 0, paddingTop: () => 8, paddingBottom: () => 8, paddingLeft: () => 0, paddingRight: (i) => (i === 0 ? 12 : 0) } },
     ];
